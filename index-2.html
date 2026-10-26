@@ -1,0 +1,907 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0d14">
+<title>E Voice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600&family=UnifrakturCook:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0b0d14;
+  --panel:rgba(14,16,25,.9);
+  --line:rgba(255,255,255,.14);
+  --fg:#eceef6;
+  --mute:#9aa0b8;
+  --chip:#1a1d2b;
+  --rec:#ff4a58;
+  --glow:#8fd3ff;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;background:var(--ink);color:var(--fg);font-family:"IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",sans-serif;overscroll-behavior:none}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,label:focus-within{outline:2px solid var(--glow);outline-offset:2px}
+.app{position:relative;height:100dvh;max-width:480px;margin:0 auto;overflow:hidden;background:#000}
+#view{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+
+.top{position:absolute;top:0;inset-inline:0;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 22px;background:linear-gradient(rgba(0,0,0,.65),rgba(0,0,0,0))}
+.stat{display:flex;align-items:center;gap:10px;min-width:0}
+.dot{width:10px;height:10px;border-radius:50%;background:#555;flex:none}
+.rec-on .dot{background:var(--rec);animation:blink 1s steps(2,start) infinite}
+@keyframes blink{50%{opacity:.25}}
+.time{font-variant-numeric:tabular-nums;font-weight:600;font-size:15px;letter-spacing:.04em;direction:ltr}
+.capstat{font-size:11px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:34vw}
+.meter{width:70px;height:6px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden;direction:ltr}
+.meter i{display:block;height:100%;width:100%;background:var(--glow);transform-origin:left;transform:scaleX(0)}
+.ibtn{width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:rgba(20,22,33,.7);display:grid;place-items:center;backdrop-filter:blur(6px)}
+.ibtn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ibtn[aria-pressed=true]{background:var(--fg);color:#0b0d14}
+
+.bottom{position:absolute;bottom:0;inset-inline:0;z-index:3;padding:48px 12px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.82) 40%)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 14px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--chip);border-radius:999px;padding:9px 16px;font-size:14px;white-space:nowrap}
+.chip[aria-pressed=true]{background:var(--fg);color:#0b0d14;border-color:var(--fg);font-weight:600}
+.row{display:flex;align-items:center;justify-content:space-between;padding:0 6px}
+.recbtn{width:76px;height:76px;border-radius:50%;border:4px solid #fff;background:transparent;display:grid;place-items:center;padding:0}
+.recbtn::after{content:"";width:56px;height:56px;border-radius:50%;background:var(--rec);transition:all .18s}
+.rec-on .recbtn::after{width:28px;height:28px;border-radius:7px}
+
+.sheet{max-height:calc(100dvh - 250px);overflow-y:auto;position:absolute;inset-inline:10px;bottom:calc(132px + env(safe-area-inset-bottom,0px));z-index:4;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px 16px;backdrop-filter:blur(10px);display:grid;gap:14px}
+.sheet h3{margin:0;font-size:13px;color:var(--mute);font-weight:400}
+.field{display:grid;gap:8px}
+.sw{display:flex;gap:10px;flex-wrap:wrap}
+.sw button{width:32px;height:32px;border-radius:50%;border:2px solid transparent;padding:0}
+.sw button[aria-pressed=true]{border-color:#fff;box-shadow:0 0 0 2px #000 inset}
+input[type=range]{width:100%;accent-color:var(--glow)}
+.sheet .btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.small[aria-pressed=true]{background:var(--fg);color:#0b0d14;font-weight:600}
+.small{border:1px solid var(--line);background:var(--chip);border-radius:10px;padding:8px 12px;font-size:13px}
+.sheethead{display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;margin:-14px -16px 0;padding:12px 16px;background:var(--panel);z-index:1}
+.sheethead h2{margin:0;font-size:15px;font-weight:600}
+.xbtn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--chip);display:grid;place-items:center;padding:0;flex:none}
+.xbtn svg{width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round}
+.xres{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));inset-inline-end:16px;z-index:2}
+select.small{color:var(--fg);max-width:100%}
+.hint{font-size:12px;color:var(--mute);line-height:1.6;margin:0}
+
+.intro,.result{position:absolute;inset:0;z-index:6;display:grid;place-items:center;padding:24px;background:radial-gradient(120% 80% at 50% 30%,rgba(143,211,255,.12),rgba(0,0,0,.88) 60%),rgba(4,5,9,.8);text-align:center}
+.card{display:grid;gap:16px;justify-items:center;max-width:340px}
+.logo{font-family:"UnifrakturCook","Old English Text MT",Georgia,serif;font-size:120px;line-height:1;color:var(--glow);text-shadow:0 0 28px var(--glow)}
+.card h1{margin:0;font-size:22px;font-weight:600}
+.card p{margin:0;color:var(--mute);font-size:15px;line-height:1.8}
+.go.alt{background:var(--chip);color:var(--fg);border:1px solid var(--line);display:block;text-align:center;cursor:pointer}
+.go{border:0;background:var(--fg);color:#0b0d14;border-radius:14px;padding:14px 22px;font-weight:600;font-size:16px;width:100%}
+.err{color:#ffb3ba;font-size:14px;line-height:1.7;min-height:1em}
+.result{align-content:center;gap:14px;grid-template-rows:1fr auto}
+.result video{width:100%;max-height:68dvh;border-radius:14px;background:#000;object-fit:contain}
+.result .btns{display:grid;gap:10px;width:100%}
+.result .go.alt{background:var(--chip);color:var(--fg);border:1px solid var(--line)}
+.toast{position:absolute;top:calc(74px + env(safe-area-inset-top,0px));inset-inline:16px;z-index:5;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:13px;text-align:center}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){.rec-on .dot{animation:none}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <canvas id="view" width="720" height="1280"></canvas>
+
+  <div class="top">
+    <div class="stat">
+      <span class="dot"></span>
+      <span class="time" id="time">00:00</span>
+      <span class="meter" aria-hidden="true"><i id="meter"></i></span>
+      <span class="capstat" id="capstat" aria-live="polite"></span>
+    </div>
+    <button class="ibtn" id="flip" aria-label="تبديل الكاميرا" hidden>
+      <svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><path d="M9.5 13.5a2.7 2.7 0 0 1 5-1M14.5 13.5a2.7 2.7 0 0 1-5 1"/></svg>
+    </button>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <div class="sheet" id="sheet" hidden>
+    <div class="sheethead">
+      <h2>الإعدادات</h2>
+      <button class="xbtn" id="sheetx" type="button" aria-label="إغلاق الإعدادات"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="field">
+      <h3>الكتابة الفورية على الشاشة</h3>
+      <div class="btnrow">
+        <button class="small" id="capt" type="button" aria-pressed="true">تشغيل</button>
+        <select id="lang" class="small" aria-label="لغة الكلام">
+          <option value="ar-IQ">العربية (العراق)</option>
+          <option value="ar-SA">العربية (فصحى)</option>
+          <option value="en-US">English</option>
+        </select>
+      </div>
+      <div class="btnrow">
+        <select id="engine" class="small" aria-label="طريقة الكتابة">
+          <option value="local">داخل الجهاز (Whisper، أبطأ)</option>
+          <option value="chrome">فوري عبر Chrome (يوقف تغيير الصوت)</option>
+        </select>
+        <select id="wmodel" class="small" aria-label="حجم النموذج">
+          <option value="Xenova/whisper-base">دقيق (أبطأ)</option>
+          <option value="Xenova/whisper-tiny">سريع (أقل دقة)</option>
+        </select>
+      </div>
+      <p class="hint">طريقة "داخل الجهاز" تحمّل نموذجاً مرة واحدة (حوالي 40 إلى 80 ميغابايت) ثم تكتب كلامك بعد كل وقفة قصيرة. تظهر كلماتك أسفل الشاشة وتدخل في الفيديو. تعتمد على خدمة Chrome وتحتاج إنترنت. إذا ضعف صوت التسجيل أو انقطع، أوقفها.</p>
+    </div>
+    <div class="field">
+      <h3>الخلفية</h3>
+      <div class="btnrow">
+        <button class="small" id="bgcam" type="button" aria-pressed="true">الكاميرا</button>
+        <button class="small" id="bgimg" type="button" aria-pressed="false">صورة</button>
+        <label class="small" for="bgfile">اختيار صورة أو GIF</label>
+        <input id="bgfile" type="file" accept="image/*" hidden>
+      </div>
+    </div>
+    <div class="field">
+      <h3>تعتيم الخلفية</h3>
+      <input type="range" id="dim" min="0" max="0.8" step="0.05" value="0.2" aria-label="تعتيم الخلفية">
+    </div>
+    <div class="field">
+      <h3>قوة تغيير الصوت (أقل = أوضح)</h3>
+      <input type="range" id="strength" min="0.3" max="1.2" step="0.05" value="0.85" aria-label="قوة تغيير الصوت">
+    </div>
+    <div class="field">
+      <h3>لون وميض الحرف E</h3>
+      <div class="sw" id="swatches"></div>
+    </div>
+    <div class="field">
+      <h3>حجم الحرف</h3>
+      <input type="range" id="size" min="0.5" max="1.6" step="0.05" value="1" aria-label="حجم الحرف">
+    </div>
+    <div class="field">
+      <h3>حساسية الوميض للصوت</h3>
+      <input type="range" id="sens" min="1" max="10" step="0.5" value="5" aria-label="حساسية الوميض">
+    </div>
+    <div class="field">
+      <h3>الحرف E الخاص بك</h3>
+      <div class="btnrow">
+        <label class="small" for="imgfile">رفع صورة الحرف</label>
+        <input id="imgfile" type="file" accept="image/*" hidden>
+        <button class="small" id="imgreset" type="button">الرجوع للحرف الأساسي</button>
+        <button class="small" id="mirror" type="button" aria-pressed="true">عكس الكاميرا الأمامية: تشغيل</button>
+      </div>
+      <p class="hint">ارفع صورة رسمتها (حرف فاتح على خلفية سوداء). الأسود يصير شفافاً تلقائياً.</p>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="chips" id="chips" role="group" aria-label="تأثيرات الصوت"></div>
+    <div class="row">
+      <button class="ibtn" id="gear" aria-label="الإعدادات" aria-pressed="false">
+        <svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
+      </button>
+      <button class="recbtn" id="rec" aria-label="بدء التسجيل"></button>
+      <button class="ibtn" id="hear" aria-label="سماع صوتي" aria-pressed="false">
+        <svg viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="intro" id="intro">
+    <div class="card">
+      <div class="logo" aria-hidden="true">E</div>
+      <h1>سجّل بصوتك وصورتك</h1>
+      <p>الحرف E يومض مع كلامك، وتقدر تغيّر صوتك إلى عميق أو مخيف أو روبوت قبل التسجيل.</p>
+      <button class="go" id="start">تشغيل الكاميرا والمايك</button>
+      <label class="go alt" for="introimg">بدون كاميرا: اختيار صورة خلفية</label>
+      <input id="introimg" type="file" accept="image/*" hidden>
+      <div class="err" id="err" role="alert"></div>
+    </div>
+  </div>
+
+  <div class="result" id="result" hidden>
+    <button class="xbtn xres" id="resx" type="button" aria-label="إغلاق"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <video id="playback" controls playsinline></video>
+    <div class="btns">
+      <button class="go" id="save">حفظ الفيديو</button>
+      <button class="go alt" id="share" hidden>مشاركة</button>
+      <button class="go alt" id="again">تسجيل جديد</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const $ = s => document.querySelector(s);
+const cv = $('#view'), ctx = cv.getContext('2d');
+const vid = document.createElement('video');
+vid.setAttribute('playsinline',''); vid.playsInline = true; vid.muted = true;
+
+const PRESETS = {
+  normal:  {name:'عادي',  a:1,    b:1,    gA:1, gB:0,    ring:0,  dist:0,  low:0,  pres:0, lp:20000, echo:0,    mix:0,    fb:0},
+  deep:    {name:'عميق',  a:0.78, b:1,    gA:1, gB:0,    ring:0,  dist:0,  low:5,  pres:4, lp:10000, echo:0,    mix:0,    fb:0},
+  scary:   {name:'مخيف',  a:0.74, b:0.66, gA:1, gB:0.28, ring:0,  dist:6,  low:4,  pres:5, lp:8000,  echo:0.12, mix:0.16, fb:0.3},
+  demon:   {name:'شيطان', a:0.64, b:0.55, gA:1, gB:0.35, ring:0,  dist:12, low:6,  pres:6, lp:7500,  echo:0.07, mix:0.18, fb:0.35},
+  robot:   {name:'روبوت', a:1,    b:1,    gA:1, gB:0,    ring:50, dist:0,  low:0,  pres:3, lp:10000, echo:0.02, mix:0.25, fb:0.25},
+  chip:    {name:'سنجاب', a:1.45, b:1,    gA:1, gB:0,    ring:0,  dist:0,  low:-2, pres:2, lp:14000, echo:0,    mix:0,    fb:0},
+  cave:    {name:'كهف',   a:0.9,  b:1,    gA:1, gB:0,    ring:0,  dist:0,  low:2,  pres:3, lp:10000, echo:0.22, mix:0.3,  fb:0.45}
+};
+const COLORS = ['#8fd3ff','#ffffff','#ff4a58','#b78bff','#7dffb0','#ffcf5c'];
+
+const S = {
+  started:false, facing:'user', mirror:true, color:COLORS[0], size:1, sens:5,
+  env:0, preset:'normal', hear:false, img:null, bgMode:'camera', bg:null, dim:0.2, strength:0.85, hasCam:false, caps:true, lang:'ar-IQ', engine:(function(){try{return localStorage.getItem('ev_engine')||'local';}catch(e){return 'local';}})(), wmodel:'Xenova/whisper-base', rec:null, chunks:[], t0:0, timer:null,
+  ac:null, an:null, workletOk:false, resultUrl:null, resultBlob:null
+};
+
+/* ---------- pitch shifter worklet (two crossfading delay taps) ---------- */
+const WORKLET = `
+class PS extends AudioWorkletProcessor{
+  constructor(){
+    super();
+    this.N=8192; this.buf=new Float32Array(this.N); this.w=0; this.p=0; this.ratio=1; this.W=1792;
+    this.port.onmessage=e=>{ if(e.data && typeof e.data.ratio==='number') this.ratio=e.data.ratio; };
+  }
+  tap(d){
+    let pos=this.w-d; if(pos<0) pos+=this.N;
+    const i0=Math.floor(pos), f=pos-i0, i1=(i0+1)%this.N;
+    return this.buf[i0]*(1-f)+this.buf[i1]*f;
+  }
+  process(inputs,outputs){
+    const i=inputs[0]&&inputs[0][0], o=outputs[0]&&outputs[0][0];
+    if(!o) return true;
+    const W=this.W;
+    for(let n=0;n<o.length;n++){
+      this.buf[this.w]= i? i[n] : 0;
+      const p2=(this.p+0.5)%1;
+      const g1=0.5-0.5*Math.cos(2*Math.PI*this.p);
+      const g2=0.5-0.5*Math.cos(2*Math.PI*p2);
+      o[n]=this.tap(this.p*W)*g1+this.tap(p2*W)*g2;
+      this.w=(this.w+1)%this.N;
+      this.p+=(1-this.ratio)/W;
+      if(this.p>=1) this.p-=1; else if(this.p<0) this.p+=1;
+    }
+    return true;
+  }
+}
+registerProcessor('ps',PS);
+`;
+
+/* ---------- UI helpers ---------- */
+function toast(msg, ms){
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast._t); toast._t = setTimeout(()=>{ t.hidden = true; }, ms || 3200);
+}
+function fmt(sec){ const m=Math.floor(sec/60), s=Math.floor(sec%60); return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); }
+
+/* ---------- build controls ---------- */
+const chips = $('#chips');
+Object.keys(PRESETS).forEach(id=>{
+  const b = document.createElement('button');
+  b.className = 'chip'; b.type = 'button'; b.textContent = PRESETS[id].name; b.dataset.id = id;
+  b.setAttribute('aria-pressed', id===S.preset ? 'true':'false');
+  b.addEventListener('click', ()=>{
+    S.preset = id;
+    chips.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed', c.dataset.id===id?'true':'false'));
+    applyPreset(id);
+    if(S.micReleased) toast('تغيير الصوت متوقف في وضع الكتابة الفورية. اختر "داخل الجهاز" من الإعدادات لإرجاعه.', 4500);
+    if(S.started && !S.workletOk && id!=='normal') toast('هذا المتصفح لا يدعم تغيير طبقة الصوت بالكامل. جرّب Chrome.');
+  });
+  chips.appendChild(b);
+});
+const sw = $('#swatches');
+COLORS.forEach(c=>{
+  const b = document.createElement('button');
+  b.type='button'; b.style.background=c; b.setAttribute('aria-label','لون '+c);
+  b.setAttribute('aria-pressed', c===S.color?'true':'false');
+  b.addEventListener('click', ()=>{
+    S.color=c; sw.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed', x===b?'true':'false'));
+  });
+  sw.appendChild(b);
+});
+$('#size').addEventListener('input', e=>{ S.size = parseFloat(e.target.value); });
+$('#sens').addEventListener('input', e=>{ S.sens = parseFloat(e.target.value); });
+function closeSheet(){ $('#sheet').hidden = true; $('#gear').setAttribute('aria-pressed','false'); }
+$('#gear').addEventListener('click', ()=>{
+  const sh = $('#sheet'); sh.hidden = !sh.hidden; $('#gear').setAttribute('aria-pressed', String(!sh.hidden));
+});
+$('#sheetx').addEventListener('click', closeSheet);
+$('#view').addEventListener('pointerdown', ()=>{ if(!$('#sheet').hidden) closeSheet(); });
+$('#resx').addEventListener('click', ()=>$('#again').click());
+document.addEventListener('keydown', e=>{
+  if(e.key!=='Escape') return;
+  if(!$('#result').hidden) $('#again').click(); else if(!$('#sheet').hidden) closeSheet();
+});
+$('#imgfile').addEventListener('change', e=>{
+  const f = e.target.files && e.target.files[0]; if(!f) return;
+  const url = URL.createObjectURL(f); const im = new Image();
+  im.onload = ()=>{ S.img = im; toast('تم تغيير الحرف E'); };
+  im.onerror = ()=>toast('تعذر فتح الصورة');
+  im.src = url;
+});
+$('#imgreset').addEventListener('click', ()=>{ S.img = null; });
+$('#mirror').addEventListener('click', e=>{
+  S.mirror = !S.mirror;
+  e.currentTarget.setAttribute('aria-pressed', String(S.mirror));
+  e.currentTarget.textContent = 'عكس الكاميرا الأمامية: ' + (S.mirror ? 'تشغيل':'إيقاف');
+});
+$('#hear').addEventListener('click', e=>{
+  S.hear = !S.hear;
+  e.currentTarget.setAttribute('aria-pressed', String(S.hear));
+  if(S.mon) S.mon.gain.setTargetAtTime(S.hear?1:0, S.ac.currentTime, 0.02);
+  if(S.hear) toast('استخدم سماعات الأذن حتى لا يحصل صدى من المايك.');
+});
+
+/* ---------- start camera + mic ---------- */
+function explain(e){
+  const n = e && e.name || '';
+  if(!window.isSecureContext) return 'الكاميرا تحتاج رابطاً آمناً (https). ارفع الملف على استضافة مجانية مثل Netlify Drop أو GitHub Pages ثم افتح الرابط.';
+  if(n==='NotAllowedError' || n==='SecurityError') return 'تم رفض الإذن. اسمح للمتصفح باستخدام الكاميرا والمايك من إعدادات الموقع ثم أعد المحاولة.';
+  if(n==='NotFoundError') return 'لم يتم العثور على كاميرا أو مايك في هذا الجهاز.';
+  if(n==='NotReadableError') return 'الكاميرا أو المايك مستخدمان في تطبيق آخر. أغلقه وأعد المحاولة.';
+  return 'تعذر تشغيل الكاميرا أو المايك. جرّب متصفح Chrome.';
+}
+function loadBg(file){
+  return new Promise((res,rej)=>{
+    const im = new Image();
+    const url = URL.createObjectURL(file);
+    im.onload = ()=>{
+      // An animated GIF only advances frames while it is part of the page, so keep it attached
+      // (1px, almost invisible) and let the canvas read its current frame every draw.
+      im.alt = ''; im.setAttribute('aria-hidden','true');
+      im.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:.01;pointer-events:none;z-index:-1';
+      if(S.bgEl && S.bgEl.parentNode) S.bgEl.parentNode.removeChild(S.bgEl);
+      if(S.bgUrl) URL.revokeObjectURL(S.bgUrl);
+      document.body.appendChild(im);
+      S.bgEl = im; S.bgUrl = url; S.bg = im;
+      res();
+    };
+    im.onerror = ()=>{ URL.revokeObjectURL(url); rej(new Error('img')); };
+    im.src = url;
+  });
+}
+function syncBg(){
+  $('#bgcam').setAttribute('aria-pressed', String(S.bgMode==='camera'));
+  $('#bgimg').setAttribute('aria-pressed', String(S.bgMode==='image'));
+  $('#flip').hidden = !(S.hasCam && S.bgMode==='camera');
+}
+async function start(withCam){
+  const btn = $('#start'); btn.disabled = true; $('#err').textContent = '';
+  try{
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw {name:'SecurityError'};
+    const st = await navigator.mediaDevices.getUserMedia({
+      audio:{echoCancellation:true, noiseSuppression:true, autoGainControl:true},
+      video: withCam ? {facingMode:S.facing, width:{ideal:1280}, height:{ideal:720}} : false
+    });
+    S.astream = new MediaStream(st.getAudioTracks());
+    if(withCam){
+      S.vstream = new MediaStream(st.getVideoTracks());
+      vid.srcObject = S.vstream; await vid.play();
+      S.hasCam = true; S.bgMode = 'camera';
+    }else{
+      S.bgMode = 'image';
+    }
+    await buildAudio();
+    S.started = true; $('#intro').hidden = true; syncBg();
+    S.astream.getAudioTracks().forEach(t=>t.addEventListener('mute', ()=>{
+      if(S.caps && S.started) toast('الكتابة الفورية تعارض المايك في جهازك. أوقفها من الإعدادات إذا انقطع الصوت.', 5000);
+    }));
+    if(S.caps) startCapsAuto();
+  }catch(e){
+    $('#err').textContent = explain(e); btn.disabled = false;
+  }
+}
+async function enableCamera(){
+  try{
+    const st = await navigator.mediaDevices.getUserMedia({video:{facingMode:S.facing, width:{ideal:1280}, height:{ideal:720}}});
+    if(S.vstream) S.vstream.getTracks().forEach(t=>t.stop());
+    S.vstream = st; vid.srcObject = st; await vid.play();
+    S.hasCam = true; S.bgMode = 'camera'; syncBg();
+  }catch(e){ toast('تعذر تشغيل الكاميرا'); }
+}
+$('#start').addEventListener('click', ()=>start(true));
+$('#introimg').addEventListener('change', async e=>{
+  const f = e.target.files && e.target.files[0]; if(!f) return;
+  try{ await loadBg(f); }catch(err){ $('#err').textContent='تعذر فتح الصورة'; return; }
+  start(false);
+});
+$('#bgcam').addEventListener('click', ()=>{
+  if(!S.started) return;
+  if(S.hasCam){ S.bgMode='camera'; syncBg(); } else enableCamera();
+});
+$('#bgimg').addEventListener('click', ()=>{
+  if(!S.started) return;
+  if(S.bg){ S.bgMode='image'; syncBg(); } else $('#bgfile').click();
+});
+$('#bgfile').addEventListener('change', async e=>{
+  const f = e.target.files && e.target.files[0]; if(!f) return;
+  try{ await loadBg(f); S.bgMode='image'; syncBg(); }catch(err){ toast('تعذر فتح الصورة'); }
+  e.target.value = '';
+});
+$('#dim').addEventListener('input', e=>{ S.dim = parseFloat(e.target.value); });
+$('#strength').addEventListener('input', e=>{ S.strength = parseFloat(e.target.value); applyPreset(S.preset); });
+document.addEventListener('pointerdown', ()=>{ if(S.ac && S.ac.state!=='running') S.ac.resume(); });
+
+$('#flip').addEventListener('click', async ()=>{
+  if(!S.started || !S.hasCam) return;
+  const next = S.facing==='user' ? 'environment' : 'user';
+  try{
+    const st = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:next}, width:{ideal:1280}, height:{ideal:720}}});
+    S.vstream.getTracks().forEach(t=>t.stop());
+    S.vstream = st; vid.srcObject = st; await vid.play(); S.facing = next;
+  }catch(e){ toast('تعذر تبديل الكاميرا'); }
+});
+
+/* ---------- audio graph ---------- */
+async function buildAudio(){
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const a = S.ac = new AC(); await a.resume();
+  const src = a.createMediaStreamSource(S.astream); S.src = src;
+  S.an = a.createAnalyser(); S.an.fftSize = 1024; src.connect(S.an);
+
+  const sum = a.createGain();
+  S.gA = a.createGain(); S.gB = a.createGain();
+  S.workletOk = false;
+  try{
+    const url = URL.createObjectURL(new Blob([WORKLET], {type:'application/javascript'}));
+    await a.audioWorklet.addModule(url); URL.revokeObjectURL(url);
+    const opt = {numberOfInputs:1, numberOfOutputs:1, outputChannelCount:[1], channelCount:1, channelCountMode:'explicit'};
+    S.pA = new AudioWorkletNode(a,'ps',opt); S.pB = new AudioWorkletNode(a,'ps',opt);
+    src.connect(S.pA); src.connect(S.pB);
+    S.pA.connect(S.gA); S.pB.connect(S.gB);
+    S.workletOk = true;
+  }catch(e){
+    src.connect(S.gA);
+  }
+  S.gA.connect(sum); S.gB.connect(sum);
+
+  S.ring = a.createGain();
+  S.osc = a.createOscillator(); S.osc.type = 'sine';
+  S.oscAmp = a.createGain(); S.oscAmp.gain.value = 0;
+  S.osc.connect(S.oscAmp); S.oscAmp.connect(S.ring.gain); S.osc.start();
+  sum.connect(S.ring);
+
+  S.shaper = a.createWaveShaper(); S.shaper.oversample = '2x';
+  S.low = a.createBiquadFilter(); S.low.type = 'lowshelf'; S.low.frequency.value = 220;
+  S.pres = a.createBiquadFilter(); S.pres.type = 'peaking'; S.pres.frequency.value = 2800; S.pres.Q.value = 0.9;
+  S.lp = a.createBiquadFilter(); S.lp.type = 'lowpass'; S.lp.Q.value = 0.7;
+  S.ring.connect(S.shaper); S.shaper.connect(S.low); S.low.connect(S.pres); S.pres.connect(S.lp);
+
+  const fin = a.createGain();
+  S.lp.connect(fin);
+  S.dl = a.createDelay(1); S.fb = a.createGain(); S.wet = a.createGain();
+  S.lp.connect(S.dl); S.dl.connect(S.fb); S.fb.connect(S.dl); S.dl.connect(S.wet); S.wet.connect(fin);
+
+  const comp = a.createDynamicsCompressor();
+  comp.threshold.value = -20; comp.knee.value = 14; comp.ratio.value = 3; comp.attack.value = 0.006; comp.release.value = 0.18;
+  const mk = a.createGain(); mk.gain.value = 1.35;
+  fin.connect(comp); comp.connect(mk);
+  S.dest = a.createMediaStreamDestination(); mk.connect(S.dest);
+  S.mon = a.createGain(); S.mon.gain.value = S.hear ? 1 : 0; mk.connect(S.mon); S.mon.connect(a.destination);
+
+  applyPreset(S.preset);
+}
+function curve(k){
+  if(!k) return null;
+  const n = 1024, c = new Float32Array(n), deg = Math.PI/180;
+  for(let i=0;i<n;i++){ const x = i*2/n - 1; c[i] = ((3+k)*x*20*deg)/(Math.PI + k*Math.abs(x)); }
+  return c;
+}
+function applyPreset(id){
+  if(!S.ac || !S.shaper) return;
+  const p = PRESETS[id], t = S.ac.currentTime, sm = 0.03, k = S.strength, kc = Math.min(1,k);
+  if(S.pA){
+    S.pA.port.postMessage({ratio:1+(p.a-1)*k});
+    S.pB.port.postMessage({ratio:1+(p.b-1)*k});
+  }
+  S.gA.gain.setTargetAtTime(p.gA, t, sm); S.gB.gain.setTargetAtTime(p.gB, t, sm);
+  if(p.ring>0){ S.osc.frequency.value = p.ring; S.ring.gain.value = 0; S.oscAmp.gain.value = 1; }
+  else { S.ring.gain.value = 1; S.oscAmp.gain.value = 0; }
+  S.shaper.curve = curve(p.dist*kc);
+  S.low.gain.setTargetAtTime(p.low*kc, t, sm);
+  S.pres.gain.setTargetAtTime(p.pres, t, sm);
+  S.lp.frequency.setTargetAtTime(p.lp, t, sm);
+  S.dl.delayTime.setTargetAtTime(p.echo || 0.001, t, sm);
+  S.fb.gain.setTargetAtTime(p.fb, t, sm);
+  S.wet.gain.setTargetAtTime(p.mix*kc, t, sm);
+}
+
+/* ---------- speech level ---------- */
+const lbuf = new Float32Array(1024);
+function micLevel(){
+  if(!S.an) return 0;
+  S.an.getFloatTimeDomainData(lbuf);
+  let s = 0; for(let i=0;i<lbuf.length;i++) s += lbuf[i]*lbuf[i];
+  const rms = Math.sqrt(s/lbuf.length);
+  const x = rms * S.sens * 1.2;
+  return Math.min(1, Math.max(0, (x - 0.08) / 0.6));
+}
+
+/* ---------- live captions (speech recognition) ---------- */
+const CAP = {words:[], t:[], last:0, cleared:0, lastLen:0, kick:0, rec:null, want:false, warned:false, step:0, count:0, t0:0, loud:0, wd:null, cfg:null};
+function capSet(words){
+  const now = performance.now();
+  CAP.t = words.map((w,i)=> i < CAP.t.length ? CAP.t[i] : now);
+  CAP.words = words; CAP.last = now;
+}
+function ladder(){
+  const base = S.lang, alt = base==='ar-IQ' ? 'ar-SA' : (base==='ar-SA' ? 'ar-IQ' : base);
+  const L = [{m:'track',l:base},{m:'default',l:base},{m:'track',l:alt},{m:'default',l:alt}];
+  return L.filter((x,i)=>L.findIndex(y=>y.m===x.m && y.l===x.l)===i);
+}
+function setStat(msg){
+  const el = $('#capstat'); if(!el) return;
+  if(!msg){ el.textContent = ''; return; }
+  const c = CAP.cfg;
+  el.textContent = 'الكتابة: ' + msg + (c ? ' · ' + (c.m==='track'?'مسار':'مباشر') + ' · ' + c.l : '');
+}
+function startCaps(auto){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ setStat('غير مدعومة'); toast('هذا المتصفح لا يدعم الكتابة الفورية. استخدم Chrome.'); return; }
+  const keepStep = CAP.step;
+  stopCaps();
+  if(auto){ CAP.step = keepStep; } else { CAP.step = 0; CAP.count = 0; }
+  const L = ladder();
+  CAP.cfg = L[Math.min(CAP.step, L.length-1)];
+  CAP.t0 = performance.now();
+  const rec = new SR();
+  const android = /Android/i.test(navigator.userAgent);
+  rec.continuous = !android;
+  rec.interimResults = true; rec.maxAlternatives = 1; rec.lang = CAP.cfg.l;
+  rec.onstart = ()=>setStat('تعمل');
+  rec.onaudiostart = ()=>setStat('تسمعك');
+  rec.onresult = e=>{
+    CAP.lastLen = e.results.length;
+    let t = '';
+    for(let i=CAP.cleared;i<e.results.length;i++) t += e.results[i][0].transcript + ' ';
+    const words = t.trim().split(/\s+/).filter(Boolean).slice(-10);
+    if(!words.length) return;
+    CAP.count++; setStat('تكتب'); CAP.kick = 1; capSet(words);
+  };
+  rec.onspeechstart = ()=>{ CAP.kick = Math.max(CAP.kick, 0.7); };
+  rec.onsoundstart = ()=>{ CAP.kick = Math.max(CAP.kick, 0.5); };
+  rec.onend = ()=>{
+    CAP.cleared = 0; CAP.lastLen = 0;
+    if(CAP.want && CAP.rec === rec) setTimeout(()=>{ if(CAP.want && CAP.rec === rec) beginRec(rec); }, android ? 80 : 250);
+  };
+  rec.onerror = e=>{
+    const c = e.error;
+    if(c==='no-speech' || c==='aborted'){ setStat('بانتظار كلامك'); return; }
+    if(c==='not-allowed' || c==='service-not-allowed'){ CAP.want = false; setStat('غير مسموحة'); toast('الكتابة الفورية غير مسموحة في هذا المتصفح.'); }
+    else if(c==='audio-capture'){ setStat('تعارض مع المايك'); }
+    else if(c==='language-not-supported'){ setStat('اللغة غير مدعومة'); }
+    else if(c==='network'){ setStat('تحتاج إنترنت'); if(!CAP.warned){ CAP.warned = true; toast('الكتابة الفورية تحتاج اتصالاً بالإنترنت.'); } }
+    else setStat('خطأ: '+c);
+  };
+  CAP.rec = rec; CAP.want = true;
+  beginRec(rec);
+  // If we hear speech but nothing is ever recognised, try the next listening method / language.
+  CAP.wd = setInterval(()=>{
+    if(!CAP.want || CAP.count>0) return;
+    const now = performance.now(), Ls = ladder();
+    if(now - CAP.t0 > 7000 && CAP.loud > CAP.t0 && now - CAP.loud < 4000){
+      if(CAP.step < Ls.length-1){ CAP.step++; startCaps(true); }
+      else if(!CAP.gaveUp){ CAP.gaveUp = true; setStat('لا نتائج'); toast('جرّبت كل الطرق ولم تظهر كلمات. أخبرني بالرسالة المكتوبة أعلى الشاشة.', 6000); }
+    }
+  }, 1000);
+}
+function beginRec(rec){
+  const tr = S.astream && S.astream.getAudioTracks()[0];
+  const useTrack = CAP.cfg && CAP.cfg.m==='track';
+  try{
+    if(useTrack && tr && tr.readyState==='live') rec.start(tr.clone()); else rec.start();
+  }catch(e){
+    try{ rec.start(); }catch(_){ }
+  }
+}
+function stopCaps(){
+  CAP.want = false; clearInterval(CAP.wd); setStat('');
+  if(CAP.rec){ try{ CAP.rec.onend = null; CAP.rec.stop(); }catch(e){} CAP.rec = null; }
+  CAP.words = []; CAP.t = []; CAP.cleared = 0; CAP.lastLen = 0;
+}
+$('#capt').addEventListener('click', e=>{
+  S.caps = !S.caps;
+  e.currentTarget.setAttribute('aria-pressed', String(S.caps));
+  e.currentTarget.textContent = S.caps ? 'تشغيل' : 'إيقاف';
+  if(S.started){ if(S.caps) startCapsAuto(); else stopAllCaps(); }
+});
+$('#lang').addEventListener('change', e=>{
+  S.lang = e.target.value;
+  if(S.started && S.caps) startCapsAuto();
+});
+/* ---------- local captions: Whisper in a worker, fed from our own mic stream ---------- */
+const LOC = {w:null, ready:false, busy:false, q:[], on:false, node:null, buf:[], pre:[], speaking:false, sil:0, n:0, floor:0.003, timers:[]};
+const WORKER_SRC = [
+"import {pipeline, env} from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';",
+"env.allowLocalModels = false;",
+"try{ env.backends.onnx.wasm.numThreads = 1; }catch(e){}",
+"let asr = null;",
+"self.onmessage = async (e) => {",
+"  const m = e.data;",
+"  try{",
+"    if(m.type === 'load'){",
+"      asr = await pipeline('automatic-speech-recognition', m.model, {progress_callback: p => { if(p && p.status === 'progress') self.postMessage({type:'progress', p: Math.round(p.progress || 0)}); }});",
+"      self.postMessage({type:'ready'});",
+"    }else if(m.type === 'run'){",
+"      const out = await asr(m.audio, {language: m.lang, task: 'transcribe', chunk_length_s: 30, return_timestamps: false});",
+"      self.postMessage({type:'text', text: ((out && out.text) || '').trim()});",
+"    }",
+"  }catch(err){ self.postMessage({type:'error', msg: String((err && err.message) || err)}); }",
+"};"
+].join('\n');
+const CAPW = "class C extends AudioWorkletProcessor{constructor(){super();this.b=new Float32Array(2048);this.n=0;}process(i){const x=i[0]&&i[0][0];if(x){for(let k=0;k<x.length;k++){this.b[this.n++]=x[k];if(this.n===2048){this.port.postMessage(this.b.slice(0));this.n=0;}}}return true;}}registerProcessor('cap',C);";
+const BAD = ['اشترك','ترجمة','نانسي','شكرا للمشاهدة','شكراً للمشاهدة','مترجم'];
+function langName(){ return /^ar/.test(S.lang) ? 'arabic' : 'english'; }
+function initWorker(){
+  LOC.ready = false; LOC.busy = false;
+  setStat('تحميل النموذج 0%');
+  try{
+    const url = URL.createObjectURL(new Blob([WORKER_SRC], {type:'application/javascript'}));
+    LOC.w = new Worker(url, {type:'module'});
+  }catch(e){ LOC.w = null; setStat('غير مدعومة'); toast('هذا المتصفح لا يدعم تشغيل النموذج. جرّب خدمة Chrome من الإعدادات.', 5000); return; }
+  LOC.w.onmessage = e=>{
+    const m = e.data;
+    if(m.type==='progress') setStat('تحميل النموذج '+m.p+'%');
+    else if(m.type==='ready'){ LOC.ready = true; setStat('تعمل (داخل الجهاز)'); pump(); }
+    else if(m.type==='text'){ LOC.busy = false; setStat('تعمل (داخل الجهاز)'); if(m.text) reveal(m.text); pump(); }
+    else if(m.type==='error'){ LOC.busy = false; setStat('خطأ: '+String(m.msg).slice(0,40)); pump(); }
+  };
+  LOC.w.onerror = ()=>{ setStat('تعذر تحميل النموذج'); toast('تعذر تحميل نموذج الكتابة. تأكد من الاتصال بالإنترنت ثم أعد فتح الصفحة.', 6000); };
+  LOC.w.postMessage({type:'load', model:S.wmodel});
+}
+async function startLocal(){
+  stopAllCaps(true);
+  if(!S.ac || !S.src) return;
+  CAP.cfg = null; LOC.on = true;
+  if(!LOC.w) initWorker(); else setStat(LOC.ready ? 'تعمل (داخل الجهاز)' : 'تحميل النموذج');
+  if(!LOC.node){
+    try{
+      const url = URL.createObjectURL(new Blob([CAPW], {type:'application/javascript'}));
+      await S.ac.audioWorklet.addModule(url); URL.revokeObjectURL(url);
+      LOC.node = new AudioWorkletNode(S.ac, 'cap', {numberOfInputs:1, numberOfOutputs:1, outputChannelCount:[1]});
+      LOC.node.port.onmessage = e=>onChunk(e.data);
+      const z = S.ac.createGain(); z.gain.value = 0;
+      S.src.connect(LOC.node); LOC.node.connect(z); z.connect(S.ac.destination);
+    }catch(err){ setStat('تعذر الاستماع'); }
+  }
+}
+function stopLocal(){
+  LOC.on = false; LOC.buf = []; LOC.pre = []; LOC.speaking = false; LOC.sil = 0; LOC.n = 0; LOC.q = [];
+  LOC.timers.forEach(clearTimeout); LOC.timers = [];
+}
+function resetWorker(){
+  if(LOC.w){ try{ LOC.w.terminate(); }catch(e){} LOC.w = null; }
+  LOC.ready = false; LOC.busy = false; LOC.q = [];
+}
+function stopAllCaps(keepStatus){ stopCaps(); stopLocal(); if(!keepStatus) setStat(''); }
+function releaseMic(){
+  if(S.micReleased) return;
+  S.micReleased = true;
+  try{ S.astream.getTracks().forEach(t=>t.stop()); }catch(e){}
+  toast('وضع الكتابة الفورية: تغيير الصوت متوقف. سجّل الشاشة بمسجّل جوالك.', 6000);
+}
+function startCapsAuto(){
+  if(S.engine==='local'){ startLocal(); }
+  else { stopLocal(); releaseMic(); startCaps(); }
+}
+function onChunk(f){
+  if(!LOC.on) return;
+  let s = 0; for(let i=0;i<f.length;i++) s += f[i]*f[i];
+  const rms = Math.sqrt(s/f.length), sr = S.ac.sampleRate, dur = f.length/sr;
+  const loud = rms > Math.max(0.012, LOC.floor*3);
+  if(!loud) LOC.floor += (rms - LOC.floor) * 0.05;
+  if(!LOC.speaking){
+    LOC.pre.push(f); if(LOC.pre.length > 8) LOC.pre.shift();
+    if(loud){ LOC.speaking = true; LOC.buf = LOC.pre.slice(); LOC.n = LOC.buf.length*f.length; LOC.sil = 0; LOC.pre = []; }
+    return;
+  }
+  LOC.buf.push(f); LOC.n += f.length;
+  LOC.sil = loud ? 0 : LOC.sil + dur;
+  if(LOC.sil > 0.7 || LOC.n/sr > 5){ flushSeg(LOC.sil > 0.7); }
+}
+function flushSeg(ended){
+  const sr = S.ac.sampleRate, n = LOC.n;
+  const speechSec = n/sr - LOC.sil;
+  const all = new Float32Array(n); let o = 0;
+  LOC.buf.forEach(a=>{ all.set(a, o); o += a.length; });
+  LOC.buf = []; LOC.n = 0; LOC.sil = 0;
+  if(ended) LOC.speaking = false;
+  if(speechSec < 0.4) return;
+  const r = sr/16000, m = Math.floor(n/r), out = new Float32Array(m);
+  for(let i=0;i<m;i++){
+    const a = Math.floor(i*r), b = Math.min(n, Math.floor((i+1)*r)); let t = 0;
+    for(let k=a;k<b;k++) t += all[k];
+    out[i] = t/Math.max(1, b-a);
+  }
+  let pk = 0; for(let i=0;i<m;i++){ const v = Math.abs(out[i]); if(v>pk) pk = v; }
+  if(pk > 0.001 && pk < 0.5){ const g = 0.6/pk; for(let i=0;i<m;i++) out[i] *= g; }
+  LOC.q.push(out); if(LOC.q.length > 2) LOC.q.shift();
+  pump();
+}
+function pump(){
+  if(LOC.busy || !LOC.ready || !LOC.w || !LOC.q.length) return;
+  LOC.busy = true;
+  LOC.w.postMessage({type:'run', audio:LOC.q.shift(), lang:langName()});
+}
+function reveal(text){
+  if(BAD.some(b=>text.indexOf(b) !== -1)) return;
+  const words = text.split(/\s+/).filter(Boolean);
+  if(!words.length) return;
+  LOC.timers.forEach(clearTimeout); LOC.timers = [];
+  words.forEach((w,i)=>{
+    LOC.timers.push(setTimeout(()=>{ capSet(words.slice(0,i+1).slice(-10)); CAP.kick = 1; }, i*130));
+  });
+}
+$('#engine').value = S.engine;
+$('#engine').addEventListener('change', e=>{
+  S.engine = e.target.value;
+  try{ localStorage.setItem('ev_engine', S.engine); }catch(_){}
+  if(S.micReleased && S.engine !== 'chrome'){ location.reload(); return; }
+  if(S.started && S.caps) startCapsAuto();
+});
+$('#wmodel').addEventListener('change', e=>{
+  S.wmodel = e.target.value;
+  resetWorker();
+  if(S.started && S.caps && S.engine==='local') startLocal();
+});
+function drawCaps(){
+  if(!S.caps || !CAP.words.length) return;
+  const now = performance.now(), idle = now - CAP.last;
+  const a = idle < 1300 ? 1 : Math.max(0, 1 - (idle-1300)/300);
+  if(a <= 0){ CAP.words = []; CAP.t = []; CAP.cleared = CAP.lastLen; return; }
+  const W = cv.width, H = cv.height, fs = Math.round(W*0.064), lh = fs*1.55, maxW = W*0.86;
+  ctx.save();
+  ctx.direction = 'rtl'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  ctx.font = '600 '+fs+'px "IBM Plex Sans Arabic","Segoe UI",system-ui,sans-serif';
+  const sp = ctx.measureText(' ').width * 1.1;
+  const ws = CAP.words.map((w,i)=>({w, t:CAP.t[i], m:ctx.measureText(w).width}));
+  let lines = [], cur = [], cw = 0;
+  ws.forEach(o=>{
+    const add = (cur.length ? sp : 0) + o.m;
+    if(cur.length && cw + add > maxW){ lines.push({items:cur, w:cw}); cur = [o]; cw = o.m; }
+    else { cur.push(o); cw += add; }
+  });
+  if(cur.length) lines.push({items:cur, w:cw});
+  lines = lines.slice(-2);
+  const base = H*0.78;
+  ctx.lineJoin = 'round'; ctx.lineWidth = fs*0.18; ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+  lines.forEach((ln,li)=>{
+    const y = base + (li - (lines.length-1)/2) * lh;
+    let x = W/2 + ln.w/2;
+    ln.items.forEach(o=>{
+      const k = Math.min(1, (now - o.t)/170);
+      ctx.globalAlpha = a * k;
+      const yy = y + (1-k)*fs*0.4;
+      ctx.shadowColor = S.color; ctx.shadowBlur = fs*0.35;
+      ctx.strokeText(o.w, x, yy);
+      ctx.shadowBlur = 0; ctx.fillStyle = '#fff';
+      ctx.fillText(o.w, x, yy);
+      x -= o.m + sp;
+    });
+  });
+  ctx.restore();
+}
+
+/* ---------- drawing ---------- */
+function drawVideo(){
+  const W = cv.width, H = cv.height;
+  let drawn = false;
+  if(S.started && S.bgMode==='image' && S.bg){
+    const bw = S.bg.naturalWidth || 1, bh = S.bg.naturalHeight || 1, sc = Math.max(W/bw, H/bh), dw = bw*sc, dh = bh*sc;
+    ctx.drawImage(S.bg, (W-dw)/2, (H-dh)/2, dw, dh); drawn = true;
+  }else if(S.started && S.bgMode==='camera' && S.hasCam && vid.videoWidth){
+    const vw = vid.videoWidth, vh = vid.videoHeight, sc = Math.max(W/vw, H/vh);
+    const dw = vw*sc, dh = vh*sc;
+    ctx.save();
+    if(S.mirror && S.facing==='user'){ ctx.translate(W,0); ctx.scale(-1,1); }
+    ctx.drawImage(vid, (W-dw)/2, (H-dh)/2, dw, dh);
+    ctx.restore(); drawn = true;
+  }
+  if(!drawn){
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#10131f'); g.addColorStop(1,'#05060b');
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  }else if(S.dim>0){
+    ctx.fillStyle = 'rgba(0,0,0,'+S.dim+')'; ctx.fillRect(0,0,W,H);
+  }
+}
+function drawE(env){
+  const W = cv.width, H = cv.height, box = W*0.62*S.size;
+  ctx.save();
+  ctx.translate(W/2, H*0.46);
+  const a = 0.16 + 0.84*env;
+  ctx.globalAlpha = a;
+  ctx.scale(1+0.1*env, 1+0.1*env);
+  if(S.img){
+    ctx.globalCompositeOperation = 'screen';
+    const r = Math.min(box/S.img.width, box/S.img.height), w = S.img.width*r, h = S.img.height*r;
+    ctx.drawImage(S.img, -w/2, -h/2, w, h);
+  }else{
+    ctx.font = '700 '+box+'px "UnifrakturCook","Old English Text MT",Georgia,serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    const m = ctx.measureText('E');
+    const off = (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent)/2;
+    ctx.shadowColor = S.color; ctx.shadowBlur = 20 + 120*env;
+    ctx.fillStyle = S.color; ctx.fillText('E', 0, off);
+    ctx.shadowBlur = 0; ctx.globalAlpha = a*env*0.55;
+    ctx.fillStyle = '#fff'; ctx.fillText('E', 0, off);
+  }
+  ctx.restore();
+}
+const meter = $('#meter');
+function frame(ts){
+  let lvl;
+  if(S.started){ lvl = Math.max(micLevel(), CAP.kick); CAP.kick *= 0.94; }
+  else lvl = 0.35 + 0.25*Math.sin(ts/420);
+  S.env += (lvl - S.env) * (lvl > S.env ? 0.55 : 0.18);
+  if(S.env > 0.3) CAP.loud = performance.now();
+  drawVideo(); drawE(S.env); drawCaps();
+  meter.style.transform = 'scaleX(' + (S.started ? Math.min(1,S.env) : 0).toFixed(3) + ')';
+  requestAnimationFrame(frame);
+}
+if(document.fonts && document.fonts.load){ document.fonts.load('700 100px "UnifrakturCook"').catch(()=>{}); }
+requestAnimationFrame(frame);
+
+/* ---------- recording ---------- */
+function pickMime(){
+  if(!window.MediaRecorder) return '';
+  const list = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+  for(const t of list){ try{ if(MediaRecorder.isTypeSupported(t)) return t; }catch(e){} }
+  return '';
+}
+function startRec(){
+  if(!window.MediaRecorder){ toast('هذا المتصفح لا يدعم التسجيل. استخدم Chrome.'); return; }
+  const vs = cv.captureStream(30);
+  const mix = new MediaStream([...vs.getVideoTracks(), ...S.dest.stream.getAudioTracks()]);
+  const mt = pickMime();
+  let rec;
+  try{ rec = new MediaRecorder(mix, mt ? {mimeType:mt, videoBitsPerSecond:5000000} : {}); }
+  catch(e){ toast('تعذر بدء التسجيل'); return; }
+  S.chunks = [];
+  rec.ondataavailable = e => { if(e.data && e.data.size) S.chunks.push(e.data); };
+  rec.onstop = onStopped;
+  rec.start(500);
+  S.rec = rec; S.t0 = Date.now();
+  $('#app').classList.add('rec-on');
+  $('#rec').setAttribute('aria-label','إيقاف التسجيل');
+  S.timer = setInterval(()=>{ $('#time').textContent = fmt((Date.now()-S.t0)/1000); }, 250);
+}
+function stopRec(){
+  if(S.rec && S.rec.state !== 'inactive') S.rec.stop();
+  clearInterval(S.timer);
+  $('#app').classList.remove('rec-on');
+  $('#rec').setAttribute('aria-label','بدء التسجيل');
+}
+function onStopped(){
+  const type = (S.rec && S.rec.mimeType) || 'video/webm';
+  const blob = new Blob(S.chunks, {type});
+  if(S.resultUrl) URL.revokeObjectURL(S.resultUrl);
+  S.resultBlob = blob; S.resultUrl = URL.createObjectURL(blob);
+  S.ext = /mp4/.test(type) ? 'mp4' : 'webm';
+  const pb = $('#playback'); pb.src = S.resultUrl;
+  const file = new File([blob], 'e-voice.'+S.ext, {type});
+  $('#share').hidden = !(navigator.canShare && navigator.canShare({files:[file]}));
+  $('#result').hidden = false;
+  $('#time').textContent = '00:00';
+}
+$('#rec').addEventListener('click', ()=>{
+  if(!S.started) return;
+  if(S.rec && S.rec.state === 'recording') stopRec(); else startRec();
+});
+$('#save').addEventListener('click', ()=>{
+  if(!S.resultUrl) return;
+  const a = document.createElement('a');
+  a.href = S.resultUrl; a.download = 'e-voice-' + Date.now() + '.' + S.ext;
+  document.body.appendChild(a); a.click(); a.remove();
+});
+$('#share').addEventListener('click', async ()=>{
+  try{
+    const file = new File([S.resultBlob], 'e-voice.'+S.ext, {type:S.resultBlob.type});
+    await navigator.share({files:[file], title:'E Voice'});
+  }catch(e){}
+});
+$('#again').addEventListener('click', ()=>{
+  const pb = $('#playback'); pb.pause(); pb.removeAttribute('src'); pb.load();
+  $('#result').hidden = true;
+});
+})();
+</script>
+</body>
+</html>
